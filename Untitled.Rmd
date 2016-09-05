@@ -1,0 +1,16 @@
+---
+title: "Untitled"
+author: "Amanda Levenberg"
+date: "September 5, 2016"
+output: html_document
+---
+
+Test
+
+```{r}
+setwd('~/Desktop/Fall2016/STA440/Case1')
+data <- load("Brain_network.Rdata")
+hist(covariate$Age)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
