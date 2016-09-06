@@ -1,0 +1,46 @@
+---
+title: "Sta 440 Case Study 1"
+author: "Amanda Levenberg, Jeffrey Ho, Lucy Lu"
+date: "September 5, 2016"
+output: pdf_document
+fontsize: 12pt
+---
+**Background**
+
+$~~~~~$ The study of neuroscience aims to examine the human nervous system, specifically as it relates to the rest of the human body. In particular interest is the relationship between brain structure and human behavior, such as the link between specific brain connections and cognitive traits. This analysis aims to study the relationship between brain fiber connections in regions of the brain and the commonly studied Big Five personality traits: openness, conscientiousness, extraversion, agreeableness, neuroticism. Each personality trait is measured on a spectrum between two extremes. For instance, the openness of an individual is qualified as a value between inventive/curious and consistent/cautious. Through network modeling and analysis, this study will aim to elucidate whether connections between certain regions of the brain, in particular those across hemispheres, are associated with personality tendencies in the Big Five personality traits when controlling for confounding variables such as the age and sex of the subject.
+
+```{r, echo=FALSE}
+setwd("~/Documents/Fall 2016/Sta 440")
+data <- load("Brain_network.RData")
+boxplot(covariate$Openness, main="Openness")
+```
+```{r, echo=FALSE}
+boxplot(covariate$Conscientiousness, main="Conscientiousness")
+```
+```{r, echo=FALSE}
+boxplot(covariate$Extraversion, main="Extraversion")
+```
+```{r, echo=FALSE}
+boxplot(covariate$Agreeableness, main="Agreeableness")
+```
+```{r, echo=FALSE}
+boxplot(covariate$Neuroticm, main="Neuroticm")
+```
+
+**Background**
+
+$~~~~~$ Based on an exploratory data analysis, the variables for the Big Five personality traits appear fairly normally distributed with only a slight skew.
+
+Openness: mean = 33.93, median = 34.50, variance = 37.64
+
+Conscientiousness: mean = 32.76, median = 33.00, variance = 37.33
+
+Extraversion: mean = 30.25, median = 31.00, variance = 39.37
+
+Agreeableness: mean = 31.92, median = 32.00, variance = 44.18
+
+Neuroticm: mean = 17.61, median 16.00, variance = 74.83
+
+$~~~~~$ Each variable appears similar in center and spread, with the exception of neuroticm, which contains a substantially lower center and a larger variance. Some of the variables (openness, extraversion, and neuroticm) contain outliers, though none of the outliers appear extreme enough to warrant concern for the analysis.
+
+$~~~~~$ Similarly, an analysis of the FSIQ and CAQ variables do not provide significant concern. FSIQ is normally distributed, with a median of 120, a mean of 119.4, and a variance of 188.5. The variable for CAQ is significantly right skewed, with a mean of 17.81 and a median of 13. Consequently, it may be necessary to transform the variable in future analysis.
