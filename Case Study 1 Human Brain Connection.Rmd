@@ -130,3 +130,13 @@ corrplot(cor(cov_for_corr), method="color", col=col(200),
          diag=FALSE
          )
 ```
+
+
+**Division of Work**
+
+All of the concepts in the report were discussed and brainstormed as a group. We collectively outlined the report and determined which analyses to conduct, which plots to include, and what analysis plan to use moving forward in order to address the scientific goals of the study.
+
+The writing was separated as follows:
+Jeffrey wrote and provided the plots for the background section and descriptive analysis of the variables.
+Lucy wrote and provided the plots for the analysis of brain connectivity both within and across hemispheres.
+Amanda wrote and provided the plots for the analysis of covariance across the covariate variables in the study.
