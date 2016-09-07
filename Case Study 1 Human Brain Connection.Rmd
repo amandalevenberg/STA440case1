@@ -1,7 +1,7 @@
 ---
 title: "Sta 440 Case Study 1"
 author: "Amanda Levenberg, Jeffrey Ho, Lucy Lu"
-date: "September 5, 2016"
+date: "September 7, 2016"
 output: pdf_document
 fontsize: 12pt
 ---
@@ -9,27 +9,20 @@ fontsize: 12pt
 
 $~~~~~$ The study of neuroscience aims to examine the human nervous system, specifically as it relates to the rest of the human body. In particular interest is the relationship between brain structure and human behavior, such as the link between specific brain connections and cognitive traits. This analysis aims to study the relationship between brain fiber connections in regions of the brain and the commonly studied Big Five personality traits: openness, conscientiousness, extraversion, agreeableness, neuroticism. Each personality trait is measured on a spectrum between two extremes. For instance, the openness of an individual is qualified as a value between inventive/curious and consistent/cautious. Through network modeling and analysis, this study will aim to elucidate whether connections between certain regions of the brain, in particular those across hemispheres, are associated with personality tendencies in the Big Five personality traits when controlling for confounding variables such as the age and sex of the subject.
 
+**Exploratory Data Analysis**
+
+$~~~~~$ Based on an exploratory data analysis, the variables for the Big Five personality traits appear fairly normally distributed with only a slight skew.
+
 ```{r, echo=FALSE}
 setwd("~/Documents/Fall 2016/Sta 440")
 data <- load("Brain_network.RData")
+par(mfrow = c(1,5))
 boxplot(covariate$Openness, main="Openness")
-```
-```{r, echo=FALSE}
 boxplot(covariate$Conscientiousness, main="Conscientiousness")
-```
-```{r, echo=FALSE}
 boxplot(covariate$Extraversion, main="Extraversion")
-```
-```{r, echo=FALSE}
 boxplot(covariate$Agreeableness, main="Agreeableness")
-```
-```{r, echo=FALSE}
 boxplot(covariate$Neuroticm, main="Neuroticm")
 ```
-
-**Background**
-
-$~~~~~$ Based on an exploratory data analysis, the variables for the Big Five personality traits appear fairly normally distributed with only a slight skew.
 
 Openness: mean = 33.93, median = 34.50, variance = 37.64
 
@@ -41,6 +34,99 @@ Agreeableness: mean = 31.92, median = 32.00, variance = 44.18
 
 Neuroticm: mean = 17.61, median 16.00, variance = 74.83
 
-$~~~~~$ Each variable appears similar in center and spread, with the exception of neuroticm, which contains a substantially lower center and a larger variance. Some of the variables (openness, extraversion, and neuroticm) contain outliers, though none of the outliers appear extreme enough to warrant concern for the analysis.
+$~~~~~$ Each variable appears similar in center and spread, with the exception of neuroticm, which contains a substantially lower center and a larger variance. Some of the variables (openness, extraversion, and neuroticm) contain outliers, though none of the outliers appear extreme enough to warrant concern for the analysis. Similarly, an analysis of the FSIQ and CAQ variables do not provide significant concern. FSIQ is normally distributed, with a median of 120, a mean of 119.4, and a variance of 188.5. The variable for CAQ is significantly right skewed, with a mean of 17.81 and a median of 13. Consequently, it may be necessary to transform the variable in future analysis.
 
-$~~~~~$ Similarly, an analysis of the FSIQ and CAQ variables do not provide significant concern. FSIQ is normally distributed, with a median of 120, a mean of 119.4, and a variance of 188.5. The variable for CAQ is significantly right skewed, with a mean of 17.81 and a median of 13. Consequently, it may be necessary to transform the variable in future analysis.
+```{r, echo=FALSE}
+get_con <- function(slice) {
+  slice[slice > 0] = 1
+  n_left <- sum(slice[1:34, 1:34])/2
+  n_right <- sum(slice[35:68, 35:68])/2
+  n_cross <- sum(slice[1:34, 35:68])
+  n_total <- sum(slice)/2
+  
+  return(c(n_left, n_right, n_cross, n_total))
+}
+
+
+con <- as.data.frame(t(apply(W, 3, get_con)))
+colnames(con) <- c('n_left', 'n_right', 'n_cross', 'n_total')
+
+# Optional to include these statistics
+# summary(con)
+
+par(mfrow = c(3,1))
+hist(con$n_left, main = 'Number of Connections Within Left-Hemisphere', xlab = 'Count')
+hist(con$n_right, main = 'Number of Connections Within Right-Hemisphere', xlab = 'Count')
+hist(con$n_cross, main = 'Number of Connections Across Hemispheres', xlab = 'Count')
+```
+
+$~~~~~$ Each subject's brain connectivity is represented by a 68 by 68 matrix, of which every element corresponds to the number of fiber connections between two brain regions. A first approach to study the connectivities is to transform the matrices to be binary. Since only about 20% of all entries are non-zero, 0 is set as the threshold above which an entry is counted as 1. After the transformation, 4 counts are collected for each subject: the number of connections within the left hemisphere, within the right hemisphere, between hemispheres and overall. Examining the distributions of these values, it can be seen that within-hemisphere connections appear normally distributed, whereas the distribution of across-hemisphere connections is right-skewed and has a greater variance.
+
+```{r, echo=FALSE}
+#install.packages("corrplot")
+library(corrplot)
+
+#Covariates for correlation matrix, excludes indicator and URSI
+cov_for_corr <- covariate[ , 3:13]
+
+#To deal with NA values, I inserted the column mean in order to be able to continue with the analysis
+for(i in 1:ncol(cov_for_corr)){
+  cov_for_corr[is.na(cov_for_corr[,i]), i] <- mean(cov_for_corr[,i], na.rm = TRUE)
+}
+
+#Significance Test
+cor.mtest <- function(mat, conf.level = 0.95){
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- lowCI.mat <- uppCI.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  diag(lowCI.mat) <- diag(uppCI.mat) <- 1
+  for(i in 1:(n-1)){
+    for(j in (i+1):n){
+      tmp <- cor.test(mat[,i], mat[,j], conf.level = conf.level)
+      p.mat[i,j] <- p.mat[j,i] <- tmp$p.value
+      lowCI.mat[i,j] <- lowCI.mat[j,i] <- tmp$conf.int[1]
+      uppCI.mat[i,j] <- uppCI.mat[j,i] <- tmp$conf.int[2]
+    }
+  }
+  return(list(p.mat, lowCI.mat, uppCI.mat))
+}
+
+# 95% and 99% p-values and confidence intervals
+res1 <- cor.mtest(cov_for_corr,0.95)
+res2 <- cor.mtest(cov_for_corr,0.99)
+```
+
+$~~~~~$ Additionally, the exploratory analysis aims to look at covariance between the covariates. Below, two correlation matrices demonstrate the correlations between various covariates. The correlations across the two plots are the same (represented by the numbers), but the boxes that are colored vary across the two plots. The shaded boxes indicate a signficant correlation between the two covariates. The first plot has boxes shaded with a 95% confidence level, and the second plot has boxes shaded with a 99% confidence level. As seen in the matrices, gender has an association with some of the OCEAN covariates, including conscientiousness and agreeableness. Additionally, some of the other metrics exhibit a significant positive correlation to each other, such as CCI and FSIQ as well as CCI and openness.
+
+$~~~~~$ With regards to the data itself, the indicator and URSI covariates were removed for the analysis. Additionally, there was some missing data. In order to continue with the analysis, if a value was missing, it was reaplced with the column mean as an estimate. Future analysis may potentially involve an alternative method to estimating these missing values. For instance, one can insert the mean of a subgroup (i.e. gender) that the subject belongs to as opposed to the mean of the entire group.
+
+```{r, echo=FALSE}
+#95% confidence correlation matrix
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(cor(cov_for_corr), method="color", col=col(200),  
+         type="lower", order="hclust", 
+         #addCoef.col = "black", # Add coefficient of correlation
+         tl.col="black", tl.srt=45, 
+         tl.cex=0.75,
+         #Text label color, rotation, and size
+         # Combine with significance
+         p.mat = res1[[1]], sig.level = 0.05, insig = "blank", 
+         # hide correlation coefficient on the principal diagonal
+         diag=FALSE
+         )
+```
+```{r, echo=FALSE}
+#99% confidence level correlation matrix
+corrplot(cor(cov_for_corr), method="color", col=col(200),  
+         type="lower", order="hclust", 
+         #addCoef.col = "black", # Add coefficient of correlation
+         tl.col="black", tl.srt=45, 
+         tl.cex=0.75,
+         #Text label color, rotation, and size
+         # Combine with significance
+         p.mat = res2[[1]], sig.level = 0.01, insig = "blank", 
+         # hide correlation coefficient on the principal diagonal
+         diag=FALSE
+         )
+```
