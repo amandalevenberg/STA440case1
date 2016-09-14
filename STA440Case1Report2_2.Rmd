@@ -1,0 +1,109 @@
+---
+title: "STA 440 Case 1 Report 2"
+author: "Jeffrey Ho, Amanda Levenberg, Lucy Lu"
+date: "September 14, 2016"
+output: pdf_document
+---
+
+**Background** 
+
+The study of neuroscience aims to examine the human nervous system, specifically as it relates to the rest of the human body. In particular interest is the relationship between brain structure and human behavior, such as the link between specific brain connections and cognitive traits. This analysis aims to study the relationship between brain fiber connections in regions of the brain and the commonly studied Big Five personality traits: openness, conscientiousness, extraversion, agreeableness, neuroticism. Each personality trait is measured on a spectrum between two extremes. For instance, the openness of an individual is qualified as a value between inventive/curious and consistent/cautious. Through network modeling and analysis, this study will aim to elucidate whether connections between certain regions of the brain, in particular those across hemispheres, are associated with personality tendencies in the Big Five personality traits when controlling for confounding variables such as the age and sex of the subject.
+
+**Introduction to the Models**
+
+In order to model the connections between brain nodes and their relation to individual characteristics, we fit several general linearized models. A logit link function was used to allow for a categorical response variable (whether or not a connection exists between nodes.) Therefore, we fit logistic regression models.
+
+The output which we aim to predict is the probability that a connection exists between the 68 nodes of the brain, based on certain characteristics of a person's identity (varying inputs of the different models). The first model is a simple model that only takes into account distance between nodes. The second takes into account distance between nodes as well as sex and age. The following five models take into account distance, sex, age, and one of the Big Five personality traits (neuroticism, openness, agreeability, extraversion, and conscientousness.)
+
+Models: 
+
+LATEX FORMATTING????
+
+**Interpretation and Goodness of Fit**
+
+
+```{r, echo=FALSE}
+#setwd('/Users/luxinyi/Desktop/STA440/case1')
+setwd("~/Documents/Fall 2016/Sta 440")
+
+Brain_network <- load('Brain_network.RData')
+
+n_reg <- 68
+n_sub <- 114
+
+source('Coord_Brain.R')
+
+get_d <- function(u, v, Coord_Brain){
+  return (sqrt(sum((Coord_Brain[u, ] - Coord_Brain[v, ])^2)))
+}
+
+d <- mapply(get_d, rep(1:n_reg, each = n_reg), rep(1:n_reg, n_reg), MoreArgs = 
+              list(Coord_Brain = Coord_Brain))
+
+
+con <- matrix(NA, n_reg^2*n_sub, 9)
+colnames(con) <- c('y', 'sex', 'age', 'neuro', 
+                   'open', 'agree', 'extra', 'consc', 'd')
+con[, 'y'] <- as.vector(W)
+con[con[, 'y'] > 0, 'y'] = 1 # y = binary connectivity
+con[, 'sex'] <- rep(covariate$Sex, each = n_reg^2)
+con[, 'age'] <- rep(covariate$Age, each = n_reg^2)
+con[, 'neuro'] <- rep(covariate$Neuroticm, each = n_reg^2)
+con[, 'open'] <- rep(covariate$Openness, each = n_reg^2)
+con[, 'agree'] <- rep(covariate$Agreeableness, each = n_reg^2)
+con[, 'extra'] <- rep(covariate$Extraversion, each = n_reg^2)
+con[, 'consc'] <- rep(covariate$Conscientiousness, each = n_reg^2)
+
+
+con[, 'd'] <- rep(d, n_sub)
+
+n_train <- 50 # number of training subjects
+train <- con[1:(n_train*n_reg^2), ]
+glm1 <- glm(train[,'y'] ~ train[, 'd'], 
+            family = binomial(link = 'logit'))
+glm2 <- glm(train[,'y'] ~ train[, 'sex'] + train[, 'age'] + train[, 'd'], 
+            family = binomial(link = 'logit'))
+
+#Models with adding 1 OCEAN covariate at a time
+glm3 <- glm(train[,'y'] ~ train[, 'sex'] + train[, 'age'] + train[, 'neuro'] + train[, 'd'], 
+            family = binomial(link = 'logit'))
+glm4 <- glm(train[,'y'] ~ train[, 'sex'] + train[, 'age'] + train[, 'open'] + train[, 'd'], 
+            family = binomial(link = 'logit'))
+glm5 <- glm(train[,'y'] ~ train[, 'sex'] + train[, 'age'] + train[, 'agree'] + train[, 'd'], 
+            family = binomial(link = 'logit'))
+glm6 <- glm(train[,'y'] ~ train[, 'sex'] + train[, 'age'] + train[, 'extra'] + train[, 'd'], 
+            family = binomial(link = 'logit'))
+glm7 <- glm(train[,'y'] ~ train[, 'sex'] + train[, 'age'] + train[, 'consc'] + train[, 'd'], 
+            family = binomial(link = 'logit'))
+
+summary(glm1)
+summary(glm2)
+summary(glm3)
+summary(glm4)
+summary(glm5)
+summary(glm6)
+summary(glm7)
+
+#Openness is the best indicator according to these results
+#Its coefficient is significant and lowest AIC 
+
+#image(1:68, 1:68, slice)
+AIC_BIC <- data.frame(AIC = c(AIC(glm1), AIC(glm2), AIC(glm3), 
+                      AIC(glm4), AIC(glm5), AIC(glm6), 
+                      AIC(glm7)), BIC = c(BIC(glm1), BIC(glm2), 
+                      BIC(glm3), BIC(glm4), BIC(glm5),
+                      BIC(glm6), BIC(glm7)))
+AIC_BIC <- round(AIC_BIC, 0)
+```
+
+The Akaike's Information Criteria (AIC) and Bayesian Information Criteria (BIC) of each model, as indicated in the above chart, serve as measures of the fitness of the different models. Both criteria operate under different assumptions - whereas the AIC aims to find an unknown model, the BIC examines the true model. In practical terms, the BIC punishes free parameters more seriously than the AIC. Both criteria were examined in the study for each model that was produced. As indicated by the criteria values, the model including Openness minimized the value for both AIC and BIC, suggesting that it was the best fit in modeling the data.
+
+**Limitations and Improvements**
+
+Several limitations existed in our model that could potentially be improved upon. For instance, similarity between brain nodes could be measured in a manner outside of simply just distance. Another analysis may attempt to incorporate whether the node connections exist within or across brain hemispheres. Indeed, brain nodes in close proximity but in different brain hemisphere may vary to a greater degree than brain nodes a similar distance apart in the same hemisphere. Moreover, the analysis does not take into account the number of connections between nodes - simply their existence. A more extensive analysis may attempt to weight connections based on the relative number of connections available.
+
+Secondly, a higher level Bayesian analysis may provide a more appropriate fit to modeling the data. The current model with Openness, though more appropriate than the other models examined, still retains a fairly high AIC and BIC. Through the use of other models and methods, it may be possible to improve upon fitness to better model the data at hand.
+
+
+For Jeff and Lucy: at the end of this code, you will see a table that contains the AIC and BIC values for each of the 7 models. Ideally, we want to choose the model which minimizes AIC and BIC.
+
