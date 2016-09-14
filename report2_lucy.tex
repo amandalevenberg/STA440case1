@@ -1,0 +1,20 @@
+\documentclass{article}
+\usepackage{amsmath}
+
+\begin{document}
+\section*{GLM Equations}
+\begin{equation}
+Pr(y_{i, u, v} = 1|x_i, Z_u, Z_v) = \text{logit}(\eta_{i, u, v})
+\end{equation}
+\begin{equation}
+\eta_{i, u, v} = \alpha^{T}x_i + \lambda||Z_u - Z_v||_2 
+\end{equation}
+
+\begin{align*}
+\text{Model 1}: x_i &= (1)^T \\
+\text{Model 2}: x_i &= (1, \text{Sex}_i, \text{Age}_i)^T \\
+\text{Model 3}: x_i &= (1, \text{Sex}_i, \text{Age}_i, \text{Openness}_i)^T 
+\end{align*}
+
+
+\end{document}
