@@ -1,0 +1,58 @@
+---
+title: "Case 1 Report 3"
+author: "Jeffrey Ho, Amanda Levenberg, Lucy Lu"
+date: "September 21, 2016"
+output: pdf_document
+---
+**Background** - can someone please elaborate?
+
+- added random effects, using Bayesian framework, controlling for same hemisphere (instead of distance between nodes)
+
+Through network modeling and analysis, this study aims to elucidate
+whether a subject’s brain connectivity is associated with their level of openness, while controlling for confounding variables such as the age and sex of the subject.
+
+**Introduction to the Model**
+
+In order to model the probability of a connection between nodes for based on an individual's attributes, we fit a linear mixed effects model. With regards to the mixed-effects aspect of the link function, the model consists of two parts, fixed and random effects. The fixed effects, reprsented by $x_{i,u,v}^T$ include gender and an indicator of whether or not the two nodes are in the same hemisphere. On the other hand, the random effects we included are represented by $R_{i}^T$, which are age and level of openness.
+
+- LUCY: please explain here why we put gender in fixed effects and age in random effects with wording maybe from that paper you got it from... also, mention/re-word: we decided to model the coefficients for the mixed and random effects with independent normal priors as opposed to two multivariate normal priors because we are assuming that the fixed and random effect variables were independent. After our exploratory analysis, we see that on a pairwise basis, no significant correlation exists between any of the covariate variables: age, openness, and sex ($\alpha=0.01$). Should I make another correlation matrix to include here?
+
+Furthermore, using probit as a link function enabled us to map a variable from the real line to a probability between 0 and 1 (which is the probsbility of a connection between nodes $u$ and $v$ for individual $i$. We chose probit specifically as the link function (instead of alternatives such as logit) because it allows us to introduce semi-conjugacy with our normal priors on $\beta_{k}$, $b_{i,j}$, and $\epsilon_{i,u,v}$.
+
+**Defining the Model and Parameters**
+
+$$Pr(Y_{i,u,v}=1) = probit(\eta_{i,u,v})$$
+$$\eta_{i,u,v} = x_{i,u,v}^T \beta + R_{i}^T b_{i} + \epsilon_{i,u,v}$$
+$$x_{i,u,v} = (sex_{i}, I_{i,u,v}(hemisphere))^T$$
+
+We define $I_{(i,u,v)}(hemisphere)$ to be the indicator function, as follows:
+$$I_{(i,u,v)}(x)=
+\begin{cases}
+1\quad\text{if nodes $u$ and $v$ are in the same hemisphere (left or right) for person $i$}\\
+0\quad\text{otherwise}
+\end{cases}
+$$
+$$R_{i} = (1, age_{i}, openness_{i})^T$$
+$$\beta_{k} \sim N(\theta_{k}, \psi_{k}); k=1,2$$
+$$b_{i,j} \sim N(\mu_{j}, \Sigma_{j}); j=0,1,2$$
+$$\epsilon_{i,u,v} \sim N(0, \sigma^2)$$
+$$\mu_{j} \sim N(\lambda_{j}, phi_{j})$$
+$$\Sigma_{j} \sim IG(a_{j}, b_{j})$$
+$$\sigma^2 \sim IG(\alpha_{j}, \beta_{j})$$
+
+**Fitting the Model with Albert and Chib Sampling Algorithm**
+
+The response variable that we are aiming to model is binary, as it predicts whether or not a connection exists beteween nodes. The traditional approach to fitting a categorical response model uses maximum likelihood, and inferences about the model are based on asymptotic theory. However, it has been found that the MLE has significant bias for small sample sizes. Consequently, we used Albert and Chib's approach to model the data, which applies a Bayesian framework using the idea of data augmentation and hierarchical models. Through this approach, we introduced a latent variable z to achieve semi-conjugacy and implement a Gibbs sampler. Below is the algorithm we implemented to approximate the joint posterior distribution.
+
+1. Sample the hyperparameters $\mu_{j}, \Sigma_{j}$ and $\sigma^2$ from their respective priors to obtain initial values.
+2. Sample the parameters $\beta_{k}^0, b_{i,j}^0,$ and $\epsilon_{i,u,v}^0$ from their respective prior distributions.
+3. Calculate $\eta_{i,u,v}^0$ and draw $z_{i,u,v}^0 \sim N(\eta_{i,u,v}, 1).$
+4. After introducing a latent variable $z$, iteratively sample from the full conditionals, where t represents the iteration number:
+
+$\beta_{k}^t \sim \pi(\beta_{k} | \beta_{-k}, b, \epsilon, y, z) \propto \pi(\beta_{k}*\prod_{i=1}^N \phi(z_{i,u,v}; \eta_{i,u,v}, 1) \sim N()$
+
+$b_{i,j}^t \sim \pi(b_{i,j} | \beta, b_{-i,-j}, \epsilon, y, z) \propto \pi(b_{i,j}*\prod_{i=1}^N \phi(z_{i,u,v}; \eta_{i,u,v}, 1) \sim N()$
+
+$\epsilon_{i,u,v} \sim \pi(\epsilon_{i,u,v} | \beta, b, \epsilon_{-i,u,v}, y, z) \propto \pi(\epsilon_{i,u,v}*\prod_{i=1}^N \phi(z_{i,u,v}; \eta_{i,u,v}, 1) \sim N()$
+
+$z_{i,u,v} \sim N(\eta_{i,u,v}, 1)$ truncated at the left by 0 if $y_{i}=1$ and trunctaed at the right by 0 if $y_{i}=0$
