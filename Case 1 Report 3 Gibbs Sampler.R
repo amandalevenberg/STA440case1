@@ -83,11 +83,13 @@ for(s in 2:samples){
     Beta[k,s]<-rnorm(1,(theta_k+psi_k*sum(x_array*D_m_array))/(1+psi_k*sum(x_array^2)),psi_k/(1+psi_k*sum(x_array^2)))
   }
   #update b
-  #for(j in 1:3){
-  #  for(i in 1:n){
-  #    b[i,j,s]<-rnorm(1,(mu[j,s]*sigma_squared+Sigma[j,s]*sum)
-  #  }
-  #}
+  for(j in 1:3){
+    for(i in 1:n){
+      D_l_array<-D_m_array[((i-1)*2278+1):((i-1)*2278+2278)]
+      x_l_array<-x_array[((i-1)*2278+1):((i-1)*2278+2278)]
+      b[i,j,s]<-rnorm(1,(mu[j,s]+Sigma[j,s]*sum(D_l_array))/(1+mu[j,s]*sum(x_l_array)),mu[j,s]/(1+mu[j,s]*sum(x_l_array)))
+    }
+  }
   #update nu
   nu_array<-matrix(c(seq(1,M)))
   nu<-function(m){
